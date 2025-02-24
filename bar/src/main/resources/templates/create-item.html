@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Add new item</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <script>
+        async function submitItem(event) {
+            event.preventDefault();
+
+            const formData = {
+                name: document.getElementById("itemName").value,
+                price: document.getElementById("itemPrice").value,
+                type: document.getElementById("itemType").value
+            };
+
+            try {
+                const response = await fetch('/api/v1/items/create', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(formData)
+                });
+
+                if (response.ok) {
+                    console.log("Item created");
+                    window.location.href = "/manage-items";
+                } else {
+                    console.log("Item creation failed");
+                }
+            } catch (error) {
+                console.error("Error:", error);
+            }
+        }
+    </script>
+</head>
+<body>
+<div class="header">
+    <div class="header-container">
+        <a href="/active-orders" class="common-header-link">Active orders</a>
+        <a href="/create-order" class="common-header-link">Create order</a>
+        <a href="/statistics" class="common-header-link">Statistics</a>
+    </div>
+    <div class="header-logout">
+        <form th:action="@{/logout}" method="post">
+            <button type="submit">Log out</button>
+        </form>
+    </div>
+</div>
+<div class="main-content">
+<div class="back-button">
+    <a href="/manage-items">
+        <button type="button">Back</button>
+    </a>
+</div>
+
+<div>
+    <form onSubmit="submitItem(event)" class="create-item-container">
+        <label for="itemName" class="item-label">Item name:</label>
+        <input class="item-input" type="text" id="itemName" name="itemName" required>
+
+        <label for="itemPrice" class="item-label">Item price:</label>
+        <input class="item-input" type="number" id="itemPrice" name="itemPrice" min="0" required>
+
+        <label for="itemType" class="item-label">Type:</label>
+        <select class="item-select-type" id="itemType" name="type">
+            <option value="" disabled selected>Select Type</option>
+            <option th:each="type : ${itemTypes}"
+                    th:value="${type}"
+                    th:text="${type.name()}"></option>
+        </select>
+
+        <button type="submit">Add new item</button>
+    </form>
+</div>
+</div>
+<div class="footer">
+    <p>Made by Oleksandr Hliantsev</p>
+</div>
+</body>
+</html>

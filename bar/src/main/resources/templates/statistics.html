@@ -1,0 +1,279 @@
+<!doctype html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Statistics</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <script>
+        async function loadStatistics() {
+            document.getElementById('most-expensive-order').style.display = 'none';
+            document.getElementById('most-popular-item').style.display = 'none';
+            document.getElementById('best-customer').style.display = 'none';
+
+            document.getElementById('null-most-expensive-order').style.display = 'none';
+            document.getElementById('null-most-popular-item').style.display = 'none';
+            document.getElementById('null-best-customer').style.display = 'none';
+
+            document.getElementById('incorrect-date').style.display = 'none';
+
+            try {
+                const ordersCount = await fetch('/api/v1/statistics/user-orders-count').then(res => res.json());
+                const closedOrdersCount = await fetch('/api/v1/statistics/user-closed-orders-count').then(res => res.json());
+
+                document.getElementById('ordersCount').textContent = `Total Orders: ${ordersCount}`;
+                document.getElementById('closedOrdersCount').textContent = `Closed Orders: ${closedOrdersCount}`;
+            } catch (error) {
+                console.error('Error loading statistics:', error);
+            }
+        }
+
+        async function showMostExpensiveOrder() {
+            const orderDTO = await fetch('/api/v1/statistics/most-expensive-order')
+                .then(res => res.ok ? res.json() : null)
+                .catch(() => null);
+            if (orderDTO != null) {
+                showUserMostExpensiveOrder(orderDTO);
+            }
+            else {
+                showNullExpensiveOrder();
+            }
+        }
+
+        async function showMostPopularItem() {
+            const startDate = document.getElementById('startDate').value;
+            const endDate = document.getElementById('endDate').value;
+
+            let startDateObj = new Date(startDate);
+            let endDateObj = new Date(endDate);
+
+            if (!startDate.trim() || !endDate.trim()
+                || isNaN(startDateObj.getTime()) || isNaN(endDateObj.getTime())
+                || startDateObj > endDateObj) {
+                showIncorrectDate();
+            }
+            else {
+                const itemDTO = await fetch(`/api/v1/statistics/most-popular-item?startDate=${startDate}&endDate=${endDate}`)
+                    .then(res => res.ok ? res.json() : null)
+                    .catch(() => null);
+
+                if (itemDTO != null) {
+                    showItem(itemDTO);
+                } else {
+                    showNullPopularItem();
+                }
+            }
+        }
+
+        async function showUserMostPopularItem() {
+            const startDate = document.getElementById('startDate').value;
+            const endDate = document.getElementById('endDate').value;
+
+            let startDateObj = new Date(startDate);
+            let endDateObj = new Date(endDate);
+
+            if (!startDate.trim() || !endDate.trim()
+                || isNaN(startDateObj.getTime()) || isNaN(endDateObj.getTime())
+                || startDateObj > endDateObj) {
+                showIncorrectDate();
+            }
+            else {
+                const itemDTO = await fetch(`/api/v1/statistics/user-most-popular-item?startDate=${startDate}&endDate=${endDate}`)
+                    .then(res => res.ok ? res.json() : null)
+                    .catch(() => null);
+                if (itemDTO != null) {
+                    showItem(itemDTO);
+                } else {
+                    showNullPopularItem();
+                }
+            }
+        }
+
+        async function showBestCustomer() {
+            const customerDTO = await fetch('/api/v1/statistics/best-customer')
+                .then(res => res.ok ? res.json() : null)
+                .catch(() => null);
+            if (customerDTO != null) {
+                showCustomer(customerDTO);
+            }
+            else {
+                showNullBestCustomer();
+            }
+        }
+
+        async function showBestUserCustomer() {
+            const customerDTO = await fetch('/api/v1/statistics/best-user-customer')
+                .then(res => res.ok ? res.json() : null)
+                .catch(() => null);
+            if (customerDTO != null) {
+                showCustomer(customerDTO);
+            }
+            else {
+                showNullBestCustomer();
+            }
+        }
+
+        function showUserMostExpensiveOrder(orderDTO) {
+            document.getElementById('null-most-expensive-order').style.display = 'none';
+            document.getElementById('most-expensive-order').style.display = 'block';
+
+            document.getElementById('elem-first-name').textContent = `${orderDTO.customerFirstName}`;
+            document.getElementById('elem-last-name').textContent = `${orderDTO.customerLastName}`;
+            document.getElementById('elem-price').textContent = `${orderDTO.price}`;
+            document.getElementById('elem-date').textContent = `${orderDTO.orderDate}`;
+        }
+
+        function showNullExpensiveOrder() {
+            document.getElementById('most-expensive-order').style.display = 'none';
+            document.getElementById('null-most-expensive-order').style.display = 'block';
+        }
+
+        function closeMostExpensive() {
+            document.getElementById('most-expensive-order').style.display = 'none';
+        }
+
+        function showItem(itemDTO) {
+            document.getElementById('incorrect-date').style.display = 'none';
+            document.getElementById('null-most-popular-item').style.display = 'none';
+            document.getElementById('most-popular-item').style.display = 'block';
+
+            document.getElementById('popular-item-name').textContent = `${itemDTO.name}`;
+            document.getElementById('popular-item-type').textContent = `${itemDTO.type}`;
+            document.getElementById('popular-item-price').textContent = `${itemDTO.price}.0`;
+            document.getElementById('popular-item-quantity').textContent = `${itemDTO.quantity}`;
+        }
+
+        function showNullPopularItem() {
+            document.getElementById('incorrect-date').style.display = 'none';
+            document.getElementById('most-popular-item').style.display = 'none';
+            document.getElementById('null-most-popular-item').style.display = 'block';
+        }
+
+        function closePopularItem() {
+            document.getElementById('incorrect-date').style.display = 'none';
+            document.getElementById('most-popular-item').style.display = 'none';
+        }
+
+        function showIncorrectDate() {
+            document.getElementById('incorrect-date').style.display = 'block';
+        }
+
+        function showCustomer(customerDTO) {
+            document.getElementById('null-best-customer').style.display = 'none';
+            document.getElementById('best-customer').style.display = 'block';
+
+            document.getElementById('best-customer-first-name').textContent = `${customerDTO.firstName}`;
+            document.getElementById('best-customer-last-name').textContent = `${customerDTO.lastName}`;
+            document.getElementById('best-customer-order-count').textContent = `${customerDTO.orderCount}`;
+        }
+
+        function showNullBestCustomer() {
+            document.getElementById('best-customer').style.display = 'none';
+            document.getElementById('null-best-customer').style.display = 'block';
+        }
+
+        function closeBestCustomer() {
+            document.getElementById('best-customer').style.display = 'none';
+        }
+    </script>
+</head>
+<body onload="loadStatistics()">
+<div class="header">
+    <div class="header-container">
+        <a href="/active-orders" class="common-header-link">Active orders</a>
+        <a href="/create-order" class="common-header-link">Create order</a>
+        <a href="/statistics" class="common-header-link">Statistics</a>
+    </div>
+    <div class="header-logout">
+        <form th:action="@{/logout}" method="post">
+            <button type="submit">Log out</button>
+        </form>
+    </div>
+</div>
+<div class="main-content">
+    <h1>Statistics</h1>
+
+    <div class="back-button">
+        <a href="/active-orders">
+            <button type="button">Back</button>
+        </a>
+    </div>
+
+    <div>
+        <h3 id="ordersCount"></h3>
+        <h3 id="closedOrdersCount"></h3>
+
+        <button onclick="showMostExpensiveOrder()">Show Most Expensive Order</button>
+        <p id="null-most-expensive-order" class="error-message">No orders found</p>
+
+        <div id="most-expensive-order">
+            <div class="most-expensive-order">
+                <div class="most-expensive-order-content">
+                    <div class="most-expensive-order-name">
+                        <p id="elem-first-name" class="active-orders-table-row-elem"></p>
+                        <p id="elem-last-name" class="active-orders-table-row-elem"></p>
+                    </div>
+                    <div class="most-expensive-order-info">
+                        <p id="elem-price" class="most-expensive-order-price"></p>
+                        <p id="elem-date" class="most-expensive-order-date"></p>
+                    </div>
+                </div>
+                <button onclick="closeMostExpensive()">Hide</button>
+            </div>
+        </div>
+
+        <div>
+            <div class="date-input-container">
+                <label for="startDate">Start Date:</label>
+                <input type="datetime-local" id="startDate" required>
+                <label for="endDate">End Date:</label>
+                <input type="datetime-local" id="endDate" required>
+            </div>
+            <div style="margin-top: 10px;">
+                <button onclick="showMostPopularItem()">Show Most Popular Item</button>
+                <button onclick="showUserMostPopularItem()">Show User's Most Popular Item</button>
+            </div>
+        </div>
+        <p id="null-most-popular-item" class="error-message">No menu items found</p>
+        <p id="incorrect-date" class="error-message">Incorrect date format</p>
+        <div id="most-popular-item" >
+            <div class="most-popular-item">
+                <div class="most-popular-item-content">
+                    <p id="popular-item-name"></p>
+                    <p id="popular-item-type"></p>
+                    <p id="popular-item-price"></p>
+                    <p id="popular-item-quantity"></p>
+                </div>
+                <button onclick="closePopularItem()">Hide</button>
+            </div>
+        </div>
+
+        <div style="margin-top: 20px;">
+            <button onclick="showBestCustomer()">Show Best Customer</button>
+            <button onclick="showBestUserCustomer()">Show User's Best Customer</button>
+        </div>
+
+        <p id="null-best-customer" class="error-message">No customers found</p>
+        <div id="best-customer">
+            <div class="most-popular-item">
+                <div class="most-popular-item-content">
+                    <div style="display: flex; flex-direction: row;">
+                        <p style="margin-right: 20px">Customer name:</p>
+                        <p style="margin-right: 10px" id="best-customer-first-name"></p>
+                        <p id="best-customer-last-name"></p>
+                    </div>
+                    <p id="best-customer-order-count"></p>
+                </div>
+                <button onclick="closeBestCustomer()">Hide</button>
+            </div>
+        </div>
+
+    </div>
+</div>
+<div class="footer">
+    <p>Made by Oleksandr Hliantsev</p>
+</div>
+</body>
+</html>

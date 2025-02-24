@@ -1,0 +1,63 @@
+<!doctype html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Manage items</title>
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+<div class="header">
+    <div class="header-container">
+        <a href="/active-orders" class="common-header-link">Active orders</a>
+        <a href="/create-order" class="common-header-link">Create order</a>
+        <a href="/statistics" class="common-header-link">Statistics</a>
+    </div>
+    <div class="header-logout">
+        <form th:action="@{/logout}" method="post">
+            <button type="submit">Log out</button>
+        </form>
+    </div>
+</div>
+<div class="main-content">
+<div class="active-orders-manage-buttons">
+    <div class="active-orders-manage-button">
+    <a href="/active-orders">
+        <button type="button">Back</button>
+    </a>
+    </div>
+    <div class="active-orders-manage-button">
+    <a th:href="@{/create-item}">
+        <button type="button">Add new menu item</button>
+    </a>
+    </div>
+</div>
+
+<h1>Manage Items</h1>
+
+<div th:if="${itemsByType.isEmpty()}">
+    <p>No items found</p>
+</div>
+
+<div th:each="entry : ${itemsByType}" class="by-type-items-container">
+    <h4 th:text="${entry.getKey()}"></h4>
+    <div th:each="item : ${entry.getValue()}">
+        <div class="item-info">
+            <p th:text="${item.name}"></p>
+            <div class="item-info-rest">
+            <p th:text="${item.price}" class="item-price"> czk</p>
+            <a th:href="@{'/edit-item/' + ${item.id}}">
+                <button type="button">Edit</button>
+            </a>
+            </div>
+        </div>
+    </div>
+</div>
+</div>
+<div class="footer">
+    <p>Made by Oleksandr Hliantsev</p>
+</div>
+</body>
+</html>

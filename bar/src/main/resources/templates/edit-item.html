@@ -1,0 +1,112 @@
+<!doctype html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Edit item</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <script>
+        async function submitChanges(event) {
+            event.preventDefault();
+
+            const itemId = document.getElementById("itemId").value;
+
+            const formData = {
+                name: document.getElementById("itemName").value,
+                price: document.getElementById("itemPrice").value,
+                type: document.getElementById("itemType").value
+            };
+
+            try {
+                const response = await fetch("/api/v1/items/edit/" + itemId, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(formData)
+                });
+
+                if (response.ok) {
+                    console.log("Item created");
+                    window.location.href = "/manage-items";
+                } else {
+                    console.log("Item creation failed");
+                }
+            }
+            catch (error) {
+                console.log(error);
+            }
+        }
+
+        async function deleteItem(event) {
+            event.preventDefault();
+            const itemId = document.getElementById("itemId").value;
+            const response = await fetch("/api/v1/items/delete/" + itemId, {
+                method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            if (response.ok) {
+                console.log("Item deleted");
+                window.location.href = "/manage-items";
+            } else {
+                console.log("Item deleted failed");
+            }
+        }
+    </script>
+</head>
+<body>
+<div class="header">
+    <div class="header-container">
+        <a href="/active-orders" class="common-header-link">Active orders</a>
+        <a href="/create-order" class="common-header-link">Create order</a>
+        <a href="/statistics" class="common-header-link">Statistics</a>
+    </div>
+    <div class="header-logout">
+        <form th:action="@{/logout}" method="post">
+            <button type="submit">Log out</button>
+        </form>
+    </div>
+</div>
+<div class="main-content">
+    <div class="back-button">
+        <a href="/manage-items">
+            <button type="button">Back</button>
+        </a>
+    </div>
+    <form onsubmit="submitChanges(event)" class="create-item-container">
+        <input type="hidden" id="itemId" name="id" th:value="${item.getId()}">
+
+        <div>
+            <label for="itemName" class="item-label">Name</label>
+            <input class="item-input" type="text" name="itemName" id="itemName" th:value="${item.getName()}">
+        </div>
+
+        <div>
+            <label for="itemPrice" class="item-label">Price</label>
+            <input class="item-input" type="number" name="itemPrice" id="itemPrice" th:value="${item.getPrice()}">
+        </div>
+
+        <label for="itemType" class="item-label">Type:</label>
+        <select class="item-select-type" id="itemType" name="type">
+            <option th:each="type : ${itemTypes}"
+                    th:value="${type}"
+                    th:text="${type.name()}"
+                    th:selected="${type == item.getType()}"></option>
+        </select>
+
+        <button type="submit">Submit</button>
+    </form>
+    <div class="back-button" style="margin-top: 20px;">
+        <button onclick="deleteItem(event)">Delete item</button>
+    </div>
+</div>
+<div class="footer">
+    <p>Made by Oleksandr Hliantsev</p>
+</div>
+</body>
+</html>

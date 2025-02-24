@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+    <title>Register</title>
+
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+<div class="main-content main-login-form">
+
+    <div class="login-form">
+        <div class="login-container">
+            <form id="registrationForm" class="login-form-horizontal" novalidate>
+                <div class="form-group">
+                    <label for="email">Email:</label>
+                    <input type="email" id="email" name="email" class="form-control" required/>
+                    <div class="error-message" id="email-error"></div>
+                </div>
+                <div class="form-group">
+                    <label for="name">Name:</label>
+                    <input type="text" id="name" name="name" class="form-control" required/>
+                    <div class="error-message" id="name-error"></div>
+                </div>
+                <div class="form-group">
+                    <label for="password">Password:</label>
+                    <input type="password" id="password" name="password" class="form-control" required/>
+                    <div class="error-message" id="password-error"></div>
+                    <small class="password-rules">Password must be at least 8 characters long and can only contain letters, numbers, and @ # % &</small>
+                </div>
+                <div class="form-group">
+                    <button type="submit" class="btn">Register</button>
+                </div>
+            </form>
+        </div>
+
+        <div>
+            <a href="/login">Back to Login</a>
+        </div>
+    </div>
+</div>
+
+<script>
+    const securityConfig = {
+        maxAttempts: 15,
+        resetTime: 30 * 60 * 1000,
+        minPasswordLength: 8
+    };
+
+    let attemptCount = 0;
+    let lastAttemptTime = 0;
+
+    document.getElementById('registrationForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        const now = Date.now();
+        if (now - lastAttemptTime < securityConfig.resetTime) {
+            if (attemptCount >= securityConfig.maxAttempts) {
+                showMessage('Too many attempts. Please try again later', 'error');
+                return;
+            }
+        } else {
+            attemptCount = 0;
+        }
+
+        clearErrors();
+
+        const formData = {
+            email: document.getElementById('email').value.trim(),
+            name: document.getElementById('name').value.trim(),
+            password: document.getElementById('password').value
+        };
+
+        try {
+            const response = await fetch('/api/v1/auth/register', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(formData),
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                if (response.status === 400) {
+                    if (data.type === 'ValidationError') {
+                        Object.entries(data.errors).forEach(([field, message]) => {
+                            showError(field, message);
+                        });
+                    } else if (data.error === 'Email already exists') {
+                        showMessage('This email is already in use', 'error');
+                    }
+                } else if (response.status === 429) {
+                    showMessage('Too many requests. Please try again later.', 'error');
+                } else {
+                    showMessage('An error occurred during registration. Please try again later', 'error');
+                }
+                return;
+            }
+
+            showMessage('Registration successful! Redirecting to login...', 'success');
+
+            document.getElementById('registrationForm').reset();
+
+            window.location.href = '/login';
+
+        } catch (error) {
+            showMessage('Network error. Please check your connection and try again.', 'error');
+        }
+    });
+
+    function showError(field, message) {
+        const errorElement = document.getElementById(`${field}-error`);
+        if (errorElement) {
+            errorElement.textContent = message;
+        }
+    }
+
+    function clearErrors() {
+        const errorElements = document.querySelectorAll('.error-message');
+        errorElements.forEach(element => element.textContent = '');
+
+        const existingMessages = document.querySelector('.alert');
+        if (existingMessages) {
+            existingMessages.remove();
+        }
+    }
+
+    function showMessage(message, type) {
+        const existingMessages = document.querySelector('.alert');
+        if (existingMessages) {
+            existingMessages.remove();
+        }
+
+        const messagesDiv = document.createElement('div');
+        messagesDiv.className = 'alert';
+        messagesDiv.textContent = message;
+
+        const mainContent = document.querySelector('.main-content');
+        mainContent.insertBefore(messagesDiv, mainContent.firstChild);
+    }
+</script>
+</body>
+</html>

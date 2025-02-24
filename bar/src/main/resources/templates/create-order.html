@@ -1,0 +1,146 @@
+<!doctype html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Create order</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <script>
+        function changeQuantity(button, change) {
+            const input = button.parentNode.querySelector('.item-quantity');
+            const currentValue = parseInt(input.value) || 0;
+            const newValue = currentValue + change;
+
+            if (newValue >= parseInt(input.min)) {
+                input.value = newValue;
+            }
+            calculateTotal();
+        }
+
+        function calculateTotal() {
+            let totalPrice = 0;
+            const itemQuantities = document.querySelectorAll(".item-quantity");
+            itemQuantities.forEach(function(input) {
+                const price = parseFloat(input.dataset.price) || 0;
+                const quantity = parseInt(input.value) || 0;
+                totalPrice += price * quantity;
+            });
+            document.getElementById("totalPrice").textContent = "Total: " + totalPrice.toFixed(2) + " czk";
+        }
+
+        async function submitOrder(event) {
+            event.preventDefault();
+
+            const itemQuantities = {};
+            document.querySelectorAll(".item-quantity").forEach(function(input) {
+                const itemId = input.name.split('[')[1].split(']')[0];
+                const quantity = parseInt(input.value) || 0;
+                if (quantity > 0) {
+                    itemQuantities[itemId] = quantity;
+                }
+            });
+
+            const customerFirstName = document.getElementById("customerFirstName").value;
+            const customerLastName = document.getElementById("customerLastName").value;
+
+            const orderData = {
+                customerFirstName: customerFirstName,
+                customerLastName: customerLastName,
+                orderItems: Object.keys(itemQuantities).map(itemId => ({
+                    itemId: itemId,
+                    quantity: itemQuantities[itemId]
+                }))
+            }
+
+            try {
+                const response = await fetch("/api/v1/orders/create", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify(orderData)
+                })
+
+                if (response.ok) {
+                    console.log(response.status + "Order created");
+                    window.location.href = "/active-orders";
+                } else {
+                    console.error(response.status + "Error");
+
+                }
+            }
+            catch (error) {
+                console.error("Error" + error);
+                alert("Failed to create order");
+            }
+        }
+    </script>
+</head>
+<body>
+<div class="header">
+    <div class="header-container">
+        <a href="/active-orders" class="common-header-link">Active orders</a>
+        <a href="/create-order" class="common-header-link">Create order</a>
+        <a href="/statistics" class="common-header-link">Statistics</a>
+    </div>
+    <div class="header-logout">
+        <form th:action="@{/logout}" method="post">
+            <button type="submit">Log out</button>
+        </form>
+    </div>
+</div>
+<div class="main-content">
+<div class="back-button">
+    <a href="/active-orders">
+        <button type="button">Back</button>
+    </a>
+</div>
+
+<h1>Create a new order</h1>
+
+<form onSubmit="submitOrder(event)">
+    <div>
+        <h2>Menu Items</h2>
+        <div th:each="entry : ${itemsByType}" class="by-type-items-container">
+            <h4 th:text="${entry.getKey()}"></h4>
+            <div th:each="item : ${entry.getValue()}">
+                <div class="item-info">
+                    <p th:text="${item.name}"></p>
+                    <div class="item-info-rest">
+                    <p th:text="${item.price}" class="item-price"> czk</p>
+                    <div class = "item-quantity-container">
+                        <button type="button" class="counter-btn" onclick="changeQuantity(this, -1)">−</button>
+                        <input type="number" class="item-quantity" th:value="0" th:data-price="${item.price}"
+                        th:name="'itemQuantities[' + ${item.getId()} + ']'" min="0" oninput="calculateTotal()">
+                        <button type="button" class="counter-btn" onclick="changeQuantity(this, 1)">+</button>
+                    </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <h2>Customer info:</h2>
+    <div class="customer-info">
+        <label for="customerFirstName" class="customer-name-label">First Name:</label>
+        <input type="text" id="customerFirstName" name="customerFirstName" class="customer-name" required>
+
+        <label for="customerLastName" class="customer-name-label">Last Name:</label>
+        <input type="text" id="customerLastName" name="customerLastName" class="customer-name" required>
+    </div>
+
+    <div>
+        <h2>Order summary:</h2>
+        <p id="totalPrice">Total: 0.00 czk</p>
+    </div>
+
+    <button type="submit">Create order</button>
+</form>
+</div>
+<div class="footer">
+    <p>Made by Oleksandr Hliantsev</p>
+</div>
+</body>
+</html>

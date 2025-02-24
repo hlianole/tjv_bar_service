@@ -1,0 +1,180 @@
+<!doctype html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Manage order</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <script>
+        async function deleteOrder(event) {
+            event.preventDefault();
+
+            const orderId = document.getElementById("orderId").value;
+            try {
+                const response = await fetch("/api/v1/orders/delete/" + orderId, {
+                    method: "DELETE"
+                })
+                if (response.ok) {
+                    console.log(response.status + "Order deleted");
+                    window.location.href = "/active-orders";
+                } else {
+                    console.error(response.status + "Error");
+                }
+            }
+            catch (error) {
+                console.log(error);
+            }
+        }
+
+        function changeQuantity(button, change) {
+            const input = button.parentNode.querySelector('.item-quantity');
+            const currentValue = parseInt(input.value) || 0;
+            const newValue = currentValue + change;
+
+            if (newValue >= parseInt(input.min)) {
+                input.value = newValue;
+            }
+            calculateTotal();
+        }
+
+        function calculateTotal() {
+            let totalPrice = 0;
+            const itemQuantities = document.querySelectorAll(".item-quantity");
+            itemQuantities.forEach(function(input) {
+                const price = parseFloat(input.dataset.price) || 0;
+                const quantity = parseInt(input.value) || 0;
+                totalPrice += price * quantity;
+            });
+            document.getElementById("totalPrice").textContent = "Total: " + totalPrice.toFixed(2) + " czk";
+        }
+
+        async function submitChanges(event) {
+            event.preventDefault();
+
+            const itemQuantities = {};
+            document.querySelectorAll(".item-quantity").forEach(function(input) {
+                const itemId = input.name.split('[')[1].split(']')[0];
+                const quantity = parseInt(input.value) || 0;
+                if (quantity >= 0) {
+                    itemQuantities[itemId] = quantity;
+                }
+            });
+
+            const orderId = document.getElementById("orderId").value;
+            const customerFirstName = document.getElementById("customerFirstName").value;
+            const customerLastName = document.getElementById("customerLastName").value;
+
+            const orderData = {
+                customerFirstName: customerFirstName,
+                customerLastName: customerLastName,
+                closed: document.getElementById("close").checked,
+                orderItems: Object.keys(itemQuantities).map(itemId => ({
+                    itemId: itemId,
+                    quantity: itemQuantities[itemId]
+                }))
+            }
+
+            try {
+                const response = await fetch("/api/v1/orders/manage/" + orderId, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify(orderData)
+                })
+
+                if (response.ok) {
+                    console.log(response.status + "Order edited");
+                    window.location.href = "/active-orders";
+                } else {
+                    console.error(response.status + "Error");
+
+                }
+            }
+            catch (error) {
+                console.error("Error" + error);
+                alert("Failed to edit order");
+            }
+        }
+
+    </script>
+</head>
+<body>
+<div class="header">
+    <div class="header-container">
+        <a href="/active-orders" class="common-header-link">Active orders</a>
+        <a href="/create-order" class="common-header-link">Create order</a>
+        <a href="/statistics" class="common-header-link">Statistics</a>
+    </div>
+    <div class="header-logout">
+        <form th:action="@{/logout}" method="post">
+            <button type="submit">Log out</button>
+        </form>
+    </div>
+</div>
+<div class="main-content">
+    <div class="back-button">
+    <a href="/active-orders">
+        <button type="button">Back</button>
+    </a>
+    </div>
+
+    <form>
+        <input type="hidden" id="orderId" name="orderId" th:value="${order.getId()}">
+        <div class="customer-info">
+        <label for="customerFirstName" class="customer-name-label">Customer first name: </label>
+        <input class="customer-name" id="customerFirstName"
+               name="customerFirstName" type="text" th:value="${order.getCustomer().getFirstName()}">
+
+        <label for="customerLastName" class="customer-name-label">Customer last name: </label>
+        <input class="customer-name" id="customerLastName"
+               name="customerLastName" type="text" th:value="${order.getCustomer().getLastName()}">
+        </div>
+
+        <div>
+        <a th:href="@{'/add-items-to-order/' + ${order.getId()}}">
+            <button type="button">Add more menu items</button>
+        </a>
+        </div>
+
+        <h2>Menu items in order</h2>
+        <div th:each="menuItem : ${order.getOrderItems()}" class="item-info">
+            <p th:text="${menuItem.getItem().getName()}"></p>
+            <div class="item-info-rest">
+                <p th:text="${menuItem.getItem().getPrice()}" class="item-price"></p>
+                <div class="item-quantity-container">
+                    <button type="button" class="counter-btn" onclick="changeQuantity(this, -1)">−</button>
+                    <input class="item-quantity" th:data-price="${menuItem.getItem().getPrice()}"
+                           th:name="'itemQuantities[' + ${menuItem.getItem().getId()} + ']'"
+                           type="number" th:value="${menuItem.getQuantity()}" min="0" step="1"
+                    oninput="calculateTotal()">
+                    <button type="button" class="counter-btn" onclick="changeQuantity(this, 1)">+</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="close-order-container">
+            <h2>Close order</h2>
+            <div class="close-order">
+                <label for="close">Close order</label>
+                <input class="close-order-check" id="close" name="close" type="checkbox" th:checked="${order.setClosed(true)}">
+            </div>
+        </div>
+
+        <div>
+            <h3>Order summary:</h3>
+            <p id="totalPrice" th:text="'Total: ' + ${order.getPrice()} + ' czk'"></p>
+        </div>
+
+        <button onclick="deleteOrder(event)">Delete Order</button>
+
+        <button onclick="submitChanges(event)">Save changes</button>
+    </form>
+</div>
+<div class="footer">
+    <p>Made by Oleksandr Hliantsev</p>
+</div>
+</body>
+</html>

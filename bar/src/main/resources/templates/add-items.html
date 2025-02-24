@@ -1,0 +1,135 @@
+<!doctype html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Add items</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <script>
+        function changeQuantity(button, change) {
+            const input = button.parentNode.querySelector('.item-quantity');
+            const currentValue = parseInt(input.value) || 0;
+            const newValue = currentValue + change;
+
+            if (newValue >= parseInt(input.min)) {
+                input.value = newValue;
+            }
+            calculateTotal();
+        }
+
+        function calculateTotal() {
+            let totalPrice = 0;
+            const itemQuantities = document.querySelectorAll(".item-quantity");
+            itemQuantities.forEach(function(input) {
+                const price = parseFloat(input.dataset.price) || 0;
+                const quantity = parseInt(input.value) || 0;
+                totalPrice += price * quantity;
+            });
+            document.getElementById("totalPrice").textContent = "Total: " + totalPrice.toFixed(2) + " czk";
+        }
+
+        async function submitOrder(event) {
+            event.preventDefault();
+
+            const orderId = document.getElementById("orderId").value;
+
+            const itemQuantities = {};
+            document.querySelectorAll(".item-quantity").forEach(function(input) {
+                const itemId = input.name.split('[')[1].split(']')[0];
+                const quantity = parseInt(input.value) || 0;
+                if (quantity >= 0) {
+                    itemQuantities[itemId] = quantity;
+                }
+            });
+
+            const orderData = {
+                orderItems: Object.keys(itemQuantities).map(itemId => ({
+                    itemId: itemId,
+                    quantity: itemQuantities[itemId]
+                }))
+            }
+
+            try {
+                const response = await fetch("/api/v1/orders/set-temporary-items/" + orderId, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify(orderData)
+                })
+
+                if (response.ok) {
+                    console.log(response.status + "Items added");
+                    window.location.href = "/manage-order/" + orderId;
+                } else {
+                    console.error(response.status + "Error in adding items");
+                }
+            }
+            catch (error) {
+                console.error("Error" + error);
+                alert("Failed to add items");
+            }
+        }
+    </script>
+</head>
+<body>
+<div class="header">
+    <div class="header-container">
+        <a href="/active-orders" class="common-header-link">Active orders</a>
+        <a href="/create-order" class="common-header-link">Create order</a>
+        <a href="/statistics" class="common-header-link">Statistics</a>
+    </div>
+    <div class="header-logout">
+        <form th:action="@{/logout}" method="post">
+            <button type="submit">Log out</button>
+        </form>
+    </div>
+</div>
+<div class="main-content">
+<h1>Add menu items to the order</h1>
+
+<form onSubmit="submitOrder(event)">
+    <input type="hidden" id="orderId" name="orderId" th:value="${order.getId()}">
+
+    <a th:href="@{'/manage-order/' + ${order.getId()}}">
+        <button type="button">Back</button>
+    </a>
+
+    <div>
+        <h3>Menu Items</h3>
+        <div th:each="entry : ${itemsByType}" class="by-type-items-container">
+            <h4 th:text="${entry.getKey()}"></h4>
+            <div th:each="item : ${entry.getValue()}">
+                <div class="item-info">
+                    <p th:text="${item.name}"></p>
+                    <div class="item-info-rest">
+                        <p th:text="${item.price}" class="item-price"> czk</p>
+                        <div class = "item-quantity-container">
+                            <button type="button" class="counter-btn" onclick="changeQuantity(this, -1)">−</button>
+                            <input type="number" class="item-quantity"
+                                   th:value="${itemsInOrder.containsKey(item.getId()) ? itemsInOrder.get(item.getId()) : 0}"
+                                   th:data-price="${item.price}"
+                                   th:name="'itemQuantities[' + ${item.id} + ']'" min="0" oninput="calculateTotal()">
+                            <button type="button" class="counter-btn" onclick="changeQuantity(this, 1)">+</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div>
+        <h3>Order summary:</h3>
+        <p id="totalPrice" th:text="'Total: ' + ${order.getPrice()} + ' czk'"></p>
+    </div>
+
+    <button type="submit">Add menu items</button>
+</form>
+</div>
+<div class="footer">
+    <p>Made by Oleksandr Hliantsev</p>
+</div>
+</body>
+</html>

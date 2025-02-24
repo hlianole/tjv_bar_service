@@ -1,0 +1,69 @@
+<!doctype html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Active Orders</title>
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+<div class="header">
+    <div class="header-container">
+        <a href="/active-orders" class="common-header-link">Active orders</a>
+        <a href="/create-order" class="common-header-link">Create order</a>
+        <a href="/statistics" class="common-header-link">Statistics</a>
+    </div>
+    <div class="header-logout">
+        <form th:action="@{/logout}" method="post">
+            <button type="submit">Log out</button>
+        </form>
+    </div>
+</div>
+<div class="main-content">
+<div class="active-orders-manage-main">
+    <h1>Manage</h1>
+    <div class="active-orders-manage-buttons">
+        <div class="active-orders-manage-button">
+            <form th:action="@{/create-order}" method="get">
+                <button type="submit">Create new order</button>
+            </form>
+        </div>
+        <div class="active-orders-manage-button">
+            <form th:action="@{/manage-items}" method="get">
+                <button type="submit">Manage menu items</button>
+            </form>
+        </div>
+    </div>
+</div>
+<div class="active-orders-main">
+    <h1>Active Orders</h1>
+    <div th:if="${orders.isEmpty()}">
+        <p>No active orders yet</p>
+    </div>
+
+    <div th:unless="${orders.isEmpty()}" class="active-orders-table">
+        <div th:each="order : ${orders}">
+            <div class="active-orders-table-row">
+                <div class="active-orders-table-row-name">
+                <p th:text="${order.getCustomer()?.getFirstName()} ?: 'Null'" class="active-orders-table-row-elem"></p>
+                <p th:text=" ${order.getCustomer()?.getLastName()} ?: 'Null'" class="active-orders-table-row-elem"></p>
+                </div>
+                <div class="active-orders-table-row-info">
+                <p th:text="${order.getPrice()}" class="active-orders-table-row-price"> czk</p>
+                <p th:text="${order.getFormattedOrderDate()}" class="active-orders-table-row-date"></p>
+                <a th:href="@{'/manage-order/' + ${order.getId()}}" class="manage-order-link">
+                    <button type="button" class="manage-order-button">Manage</button>
+                </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+</div>
+<div class="footer">
+    <p>Made by Oleksandr Hliantsev</p>
+</div>
+</body>
+</html>
