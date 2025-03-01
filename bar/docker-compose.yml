@@ -1,0 +1,31 @@
+version: '3.8'
+services:
+  db:
+    image: postgres:15
+    container_name: my-postgres
+    restart: always
+    environment:
+      POSTGRES_DB: bar_service
+      POSTGRES_USER: bar_service_user
+      POSTGRES_PASSWORD: ${BAR_SERVICE_DB_PASSWORD}
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./postgres_data:/var/lib/postgresql/data
+
+  app:
+    build: .
+    container_name: my-spring-app
+    depends_on:
+      - db
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+#      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/bar_service
+#      SPRING_DATASOURCE_USERNAME: bar_service_user
+      BAR_SERVICE_DB_PASSWORD: ${BAR_SERVICE_DB_PASSWORD}
+      SPRING_CONFIG_LOCATION: file:/app/config/application-docker.properties
+    ports:
+      - "8080:8080"
+
+volumes:
+  postgres_data:
